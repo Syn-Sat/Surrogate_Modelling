@@ -1,2 +1,2 @@
-# Surrogate Modelling For Thermodynnamic Properties Usding ML
+# Surrogate Modelling For Thermodynnamic Properties Using ML
 
