@@ -1,2 +1,2 @@
-# Exploratory_Project
+# Surrogate Mpde;;ing For Thermodynnamic Properties Usding ML
 
