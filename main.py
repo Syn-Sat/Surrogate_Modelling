@@ -1,4 +1,4 @@
-# Surrogate Model Pipeline for Vapour Pressure of Alcohols (CSV-based, InChI support)
+# Surrogate Model Pipeline for Vapour Pressure of Alcohols (CSV-based)
 
 import pandas as pd
 import numpy as np
@@ -8,7 +8,6 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score
 
-# --- Step 1: Load CSV File ---
 def load_csv_data(csv_file):
     try:
         df = pd.read_csv(csv_file)
@@ -18,7 +17,6 @@ def load_csv_data(csv_file):
         print(f"Error reading CSV file {csv_file}: {e}")
         return pd.DataFrame()
 
-# --- Step 2: Compute Molecular Descriptors from InChI ---
 def compute_descriptors(inchi):
     mol = Chem.MolFromInchi(inchi)
     if mol:
@@ -38,7 +36,6 @@ def compute_descriptors(inchi):
             'MolLogP': np.nan
         }
 
-# --- Step 3: Filter Alcohol-like Molecules (C–O bonds) ---
 def is_alkaneetc(inchi):
     mol = Chem.MolFromInchi(inchi)
     if not mol:
@@ -48,34 +45,32 @@ def is_alkaneetc(inchi):
             return False
     return True
 
-# --- Step 4: Build and Evaluate Linear Regression Model ---
 def train_linear_model(df):
-    # Compute descriptors
+
     desc_df = df['InChI'].apply(compute_descriptors).apply(pd.Series)
     df = pd.concat([df, desc_df], axis=1).dropna()
 
-    # Keep only positive pressures
+
     features = ['Temperature_K', 'MolWt', 'TPSA', 'NumHDonors', 'NumHAcceptors', 'MolLogP']
     X = df[features]
     y = np.log(df['VapourPressure_kPa'])
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
     model = LinearRegression()
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
 
-    mae = mean_absolute_error(np.exp(y_test), np.exp(y_pred))  # back-transform
+    mae = mean_absolute_error(np.exp(y_test), np.exp(y_pred))  
     r2 = r2_score(y_test, y_pred)
 
     print("\nLinear Regression Model Evaluation:")
     print("MAE (kPa):", mae)
-    print("R² Score:", r2)
+    print("R^2 Score:", r2)
     return model
 
-# --- Main Execution ---
 if __name__ == "__main__":
-    csv_file = "thermoml_vapor_pressure.csv"  # generated from XML parser
+    csv_file = "thermoml_vapor_pressure_smiles.csv"
     df = load_csv_data(csv_file)
 
     if not df.empty:
