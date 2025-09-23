@@ -65,7 +65,7 @@ def parse_thermoml_to_csv(xml_dir, output_csv="thermoml_vapor_pressure.csv"):
                                             try:
                                                 records.append({
                                                     "InChI": inchis[0],  # first component for now
-                                                    "VapourPressure": float(val),
+                                                    "VapourPressure_kPa": float(val),
                                                     "Temperature_K": float(temp_val) if temp_val else None
                                                 })
                                             except ValueError:

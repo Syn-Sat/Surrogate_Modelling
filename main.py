@@ -55,8 +55,6 @@ def train_linear_model(df):
     df = pd.concat([df, desc_df], axis=1).dropna()
 
     # Keep only positive pressures
-    df = df[df['VapourPressure_kPa'] > 0]
-
     features = ['Temperature_K', 'MolWt', 'TPSA', 'NumHDonors', 'NumHAcceptors', 'MolLogP']
     X = df[features]
     y = np.log(df['VapourPressure_kPa'])
@@ -82,8 +80,13 @@ if __name__ == "__main__":
 
     if not df.empty:
         df = df[df['InChI'].apply(is_alkaneetc)]
-        print(f"Filtered {len(df)} alcohol-like records with vapor pressure data.")
+        print(f"Filtered {len(df)} hydrocarbon records with vapor pressure data.")
+        df = df[df['VapourPressure_kPa'] > 0]
+        df = df[df['VapourPressure_kPa'] < 10000]
+
         print(df[['InChI', 'VapourPressure_kPa', 'Temperature_K']].head(10))
+        print("Min P (kPa):", df['VapourPressure_kPa'].min())
+        print("Max P (kPa):", df['VapourPressure_kPa'].max())
 
         if not df.empty:
             trained_model = train_linear_model(df)
