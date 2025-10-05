@@ -5,6 +5,7 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score
 
@@ -45,7 +46,7 @@ def is_alkaneetc(inchi):
             return False
     return True
 
-def train_linear_model(df):
+def train_random_forest(df):
 
     desc_df = df['InChI'].apply(compute_descriptors).apply(pd.Series)
     df = pd.concat([df, desc_df], axis=1).dropna()
@@ -57,20 +58,25 @@ def train_linear_model(df):
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-    model = LinearRegression()
+    model = RandomForestRegressor(
+        n_estimators=200,      
+        max_depth=None,        
+        random_state=42,       
+        n_jobs=-1              
+    )
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
 
     mae = mean_absolute_error(np.exp(y_test), np.exp(y_pred))  
     r2 = r2_score(y_test, y_pred)
 
-    print("\nLinear Regression Model Evaluation:")
+    print("\nRandom Forest Model Evaluation:")
     print("MAE (kPa):", mae)
     print("R^2 Score:", r2)
     return model
 
 if __name__ == "__main__":
-    csv_file = "thermoml_vapor_pressure_smiles.csv"
+    csv_file = "vapour_pressure_data_final.csv"
     df = load_csv_data(csv_file)
 
     if not df.empty:
@@ -79,12 +85,11 @@ if __name__ == "__main__":
         df = df[df['VapourPressure_kPa'] > 0]
         df = df[df['VapourPressure_kPa'] < 10000]
 
-        print(df[['InChI', 'VapourPressure_kPa', 'Temperature_K']].head(10))
         print("Min P (kPa):", df['VapourPressure_kPa'].min())
         print("Max P (kPa):", df['VapourPressure_kPa'].max())
 
         if not df.empty:
-            trained_model = train_linear_model(df)
+            trained_model = train_random_forest(df)
         else:
             print("No vapor pressure data after filtering.")
     else:
