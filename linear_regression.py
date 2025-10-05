@@ -5,7 +5,6 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score
 
@@ -46,7 +45,7 @@ def is_alkaneetc(inchi):
             return False
     return True
 
-def train_random_forest(df):
+def train_linear_regression(df):
 
     desc_df = df['InChI'].apply(compute_descriptors).apply(pd.Series)
     df = pd.concat([df, desc_df], axis=1).dropna()
@@ -58,18 +57,14 @@ def train_random_forest(df):
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-    model = RandomForestRegressor(
-        n_estimators=200,      
-        max_depth=None,               
-        n_jobs=-1              
-    )
+    model = LinearRegression()
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
 
     mae = mean_absolute_error(np.exp(y_test), np.exp(y_pred))  
     r2 = r2_score(y_test, y_pred)
 
-    print("\nRandom Forest Model Evaluation:")
+    print("\nLinear Regression Model Evaluation:")
     print("MAE (kPa):", mae)
     print("R^2 Score:", r2)
     return model
@@ -88,7 +83,7 @@ if __name__ == "__main__":
         print("Max P (kPa):", df['VapourPressure_kPa'].max())
 
         if not df.empty:
-            trained_model = train_random_forest(df)
+            trained_model = train_linear_regression(df)
         else:
             print("No vapor pressure data after filtering.")
     else:
