@@ -75,9 +75,14 @@ if __name__ == "__main__":
 
     if not df.empty:
         df = df[df['InChI'].apply(is_alkaneetc)]
-        print(f"Filtered {len(df)} hydrocarbon records with vapor pressure data.")
+        
         df = df[df['VapourPressure_kPa'] > 0]
         df = df[df['VapourPressure_kPa'] < 10000]
+
+        df = df[df['Temperature_K'] > 260]
+        df = df[df['Temperature_K'] < 330]
+
+        print(f"Filtered {len(df)} cleaned hydrocarbon records with vapor pressure data, and temp b/w 260,330K.")
 
         print("Min P (kPa):", df['VapourPressure_kPa'].min())
         print("Max P (kPa):", df['VapourPressure_kPa'].max())
