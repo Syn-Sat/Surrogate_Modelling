@@ -6,8 +6,8 @@ from rdkit import Chem
 from rdkit.Chem import Descriptors
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error, r2_score
-
+from sklearn.metrics import mean_absolute_error, r2_score, mean_absolute_percentage_error
+import matplotlib.pyplot as plt
 def load_csv_data(csv_file):
     try:
         df = pd.read_csv(csv_file)
@@ -60,12 +60,18 @@ def train_linear_regression(df):
     model = LinearRegression()
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
+    
+    plt.scatter(y_test, y_pred)
+    plt.xlabel("y_test")
+    plt.ylabel("y_pred")
 
     mae = mean_absolute_error(np.exp(y_test), np.exp(y_pred))  
+    mape = mean_absolute_percentage_error(np.exp(y_test), np.exp(y_pred))  
     r2 = r2_score(y_test, y_pred)
 
     print("\nLinear Regression Model Evaluation:")
     print("MAE (kPa):", mae)
+    print("MAPE: ", mape)
     print("R^2 Score:", r2)
     return model
 
