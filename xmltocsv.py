@@ -1,7 +1,7 @@
 import os
 import xml.etree.ElementTree as ET
 import pandas as pd
-from rdkit import Chem  # for InChI -> SMILES conversion
+from rdkit import Chem
 
 # --- Utility: Strip XML namespace ---
 def strip_namespace(tag):
@@ -77,12 +77,22 @@ def parse_thermoml_to_csv(xml_dir, output_csv="thermoml_vapor_pressure.csv"):
                                                 inchi_str = inchis[0]  # first component for now
                                                 smiles_str = inchi_to_smiles(inchi_str)
 
-                                                records.append({
-                                                    "InChI": inchi_str,
-                                                    "SMILES": smiles_str,
-                                                    "VapourPressure_kPa": float(val),
-                                                    "Temperature_K": float(temp_val) if temp_val else None
-                                                })
+                                                min_vp = 0.00001
+                                                max_vp = 8000
+                                                min_temp = 200
+                                                max_temp = 400
+
+                                                vp_val = float(val)
+
+                                                temp_val_float = float(temp_val)
+                                                if (min_vp <= vp_val <= max_vp) and (min_temp <= temp_val_float <= max_temp):
+                                                    
+                                                    records.append({
+                                                        "InChI": inchi_str,
+                                                        "SMILES": smiles_str,
+                                                        "VapourPressure_kPa": vp_val,
+                                                        "Temperature_K": temp_val_float if temp_val else None
+                                                    })
                                             except ValueError:
                                                 continue
 

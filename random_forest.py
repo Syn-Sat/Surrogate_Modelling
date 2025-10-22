@@ -2,13 +2,15 @@
 
 import pandas as pd
 import numpy as np
-from rdkit import Chem
-from rdkit.Chem import Descriptors
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score, mean_absolute_percentage_error
 import matplotlib.pyplot as plt
+from pandarallel import pandarallel
+
+pandarallel.initialize(progress_bar=True)
+
 def load_csv_data(csv_file):
     try:
         df = pd.read_csv(csv_file)
@@ -19,7 +21,22 @@ def load_csv_data(csv_file):
         return pd.DataFrame()
 
 def compute_descriptors(inchi):
-    mol = Chem.MolFromInchi(inchi)
+    from rdkit import Chem
+    from rdkit.Chem import Descriptors
+    from functools import lru_cache
+
+    @lru_cache(maxsize=None)
+    def mol_from_inchi_cached(inchi):
+        return Chem.MolFromInchi(inchi)
+
+    mol = mol_from_inchi_cached(inchi)
+
+    def num_branches(inchi):
+        return sum((atom.GetAtomicNum() == 6 and atom.GetDegree() > 2) for atom in mol.GetAtoms())
+    
+    def num_nitrogens(inchi):
+        return sum(atom.GetAtomicNum() == 7 for atom in mol.GetAtoms())
+
     if mol:
         return {
             'MolWt': Descriptors.MolWt(mol),
@@ -27,7 +44,8 @@ def compute_descriptors(inchi):
             'NumHDonors': Descriptors.NumHDonors(mol),
             'NumHAcceptors': Descriptors.NumHAcceptors(mol),
             'MolLogP': Descriptors.MolLogP(mol),
-            'NumBranches': num_branches(inchi)
+            'NumBranches': num_branches(inchi),
+            'NumNitrogens': num_nitrogens(inchi)
         }
     else:
         return {
@@ -36,35 +54,26 @@ def compute_descriptors(inchi):
             'NumHDonors': np.nan,
             'NumHAcceptors': np.nan,
             'MolLogP': np.nan,
-            'NumBranches': np.nan
+            'NumBranches': np.nan,
+            'NumNitrogens': np.nan
         }
 
 def is_alkaneetc(inchi):
+    from rdkit import Chem
     mol = Chem.MolFromInchi(inchi)
     if not mol:
         return False
     for atom in mol.GetAtoms():
-        if atom.GetSymbol() not in ["C", "H"]:
+        if atom.GetAtomicNum() not in [1, 6, 7]: #H,C,N,O
             return False
     return True
 
-def num_branches(inchi):
-    mol = Chem.MolFromInchi(inchi)
-    if not mol:
-        return False
-    branch_points = 0
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == "C":  # focus on hydrocarbons
-            if atom.GetDegree() > 2:  # more than 2 bonds → branch
-                branch_points += 1
-    return branch_points
-
 def train_random_forest(df):
 
-    desc_df = df['InChI'].apply(compute_descriptors).apply(pd.Series)
+    desc_df = df['InChI'].parallel_apply(compute_descriptors).parallel_apply(pd.Series)
     df = pd.concat([df, desc_df], axis=1).dropna()
 
-    features = ['Temperature_K', 'MolWt', 'TPSA', 'NumHDonors', 'NumHAcceptors', 'MolLogP', 'NumBranches']
+    features = ['Temperature_K', 'MolWt', 'TPSA', 'NumHDonors', 'NumHAcceptors', 'MolLogP', 'NumBranches', 'NumNitrogens']
     X = df[features]
     y = np.log(df['VapourPressure_kPa'])
 
@@ -81,14 +90,23 @@ def train_random_forest(df):
     mae = mean_absolute_error(np.exp(y_test), np.exp(y_pred))  
     mape = mean_absolute_percentage_error(np.exp(y_test), np.exp(y_pred))
     r2 = r2_score(y_test, y_pred)
-    plt.scatter(y_test, y_pred)
-    plt.xlabel("y_test")
-    plt.ylabel("y_pred")
-    plt.show()
+
+    plt.scatter(y_test, y_pred, color='blue')
+    m, b = np.polyfit(y_test, y_pred, 1)
+
+    plt.plot(y_test, m*y_test + b, 'r--', label=f'Fit: y={m:.2f}x+{b:.2f}')
+
+    plt.xlabel('Experimental')
+    plt.ylabel('Predicted')
+
     print("\nRandom Forest Model Evaluation:")
     print("MAE (kPa):", mae)
     print("MAPE: ", mape)
     print("R^2 Score:", r2)
+
+    plt.legend()
+    plt.show()
+
     return model
 
 if __name__ == "__main__":
@@ -96,15 +114,14 @@ if __name__ == "__main__":
     df = load_csv_data(csv_file)
 
     if not df.empty:
-        df = df[df['InChI'].apply(is_alkaneetc)]
+        df = df[df['InChI'].parallel_apply(is_alkaneetc)]
 
-        df = df[df['VapourPressure_kPa'] > 0.00001]
-        df = df[df['VapourPressure_kPa'] < 8000]
-        print(f"Filtered {len(df)} cleaned linear hydrocarbon records with vapor pressure data.")
+        print(f"Filtered {len(df)} cleaned hydrocarbon records with vapor pressure data.")
 
         print("Min P (kPa):", df['VapourPressure_kPa'].min())
         print("Max P (kPa):", df['VapourPressure_kPa'].max())
-
+        print("Min T (K)", df['Temperature_K'].min)
+        print("Max T (K)", df['Temperature_K'].max)
         if not df.empty:
             trained_model = train_random_forest(df)
         else:
