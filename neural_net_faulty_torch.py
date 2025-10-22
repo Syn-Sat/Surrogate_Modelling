@@ -1,21 +1,19 @@
 # Surrogate Model Pipeline for Vapour Pressure of Hydrocarbons (with H,C,N molecules) (CSV-based)
-
+import torch
+import torch.nn as nn
+import torch.optim as optim
 import pandas as pd
 import numpy as np
 from rdkit import RDLogger
 from sklearn.metrics import mean_absolute_error, r2_score, mean_absolute_percentage_error
 import matplotlib.pyplot as plt
 from pandarallel import pandarallel
-
-import torch
-import torch.nn as nn
-import torch.optim as optim
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 RDLogger.DisableLog('rdApp.warning')
 
-pandarallel.initialize(progress_bar=True, nb_workers=12)
+pandarallel.initialize(progress_bar=False, verbose=0)
 
 def load_csv_data(csv_file):
     try:
@@ -74,7 +72,7 @@ def is_alkaneetc(inchi):
             return False
     return True
 
-def train_random_forest(df):
+def train_neural_net(df):
 
     desc_df = df['InChI'].parallel_apply(compute_descriptors).parallel_apply(pd.Series)
     df = pd.concat([df, desc_df], axis=1).dropna()
@@ -114,7 +112,7 @@ def train_random_forest(df):
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     # --- Step 7: Training loop ---
-    num_epochs = 20
+    num_epochs = 100
     for epoch in range(num_epochs):
         model.train()
         optimizer.zero_grad()
@@ -130,7 +128,7 @@ def train_random_forest(df):
     with torch.no_grad():
         y_pred = model(X_test_tensor)
         mse = criterion(y_pred, y_test_tensor).item()
-        print(f"\nTest RMSE: {(np.sqrt(mse)):.4f}")
+        print(f"\nTest RMSE (kPa): {np.exp(np.sqrt(mse)):.4f}")
 
     return model
 
@@ -143,12 +141,8 @@ if __name__ == "__main__":
 
         print(f"Filtered {len(df)} cleaned hydrocarbon records with vapor pressure data.")
 
-        print("Min P (kPa):", df['VapourPressure_kPa'].min())
-        print("Max P (kPa):", df['VapourPressure_kPa'].max())
-        print("Min T (K)", df['Temperature_K'].min)
-        print("Max T (K)", df['Temperature_K'].max)
         if not df.empty:
-            trained_model = train_random_forest(df)
+            trained_model = train_neural_net(df)
         else:
             print("No vapor pressure data after filtering.")
     else:
