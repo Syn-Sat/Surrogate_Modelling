@@ -1,4 +1,4 @@
-# Surrogate Model Pipeline for Vapour Pressure of Alcohols (CSV-based)
+# Surrogate Model Pipeline for Vapour Pressure of Hydrocarbons (with H,C,N molecules) (CSV-based)
 
 import pandas as pd
 import numpy as np
