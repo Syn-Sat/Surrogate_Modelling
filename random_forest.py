@@ -2,6 +2,7 @@
 
 import pandas as pd
 import numpy as np
+from rdkit import RDLogger
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
@@ -9,7 +10,9 @@ from sklearn.metrics import mean_absolute_error, r2_score, mean_absolute_percent
 import matplotlib.pyplot as plt
 from pandarallel import pandarallel
 
-pandarallel.initialize(progress_bar=True)
+RDLogger.DisableLog('rdApp.warning')
+
+pandarallel.initialize(progress_bar=True, nb_workers=12)
 
 def load_csv_data(csv_file):
     try:
@@ -64,7 +67,7 @@ def is_alkaneetc(inchi):
     if not mol:
         return False
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in [1, 6, 7]: #H,C,N,O
+        if atom.GetAtomicNum() not in [1, 6, 7]: #H,C,N
             return False
     return True
 
@@ -80,7 +83,7 @@ def train_random_forest(df):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
 
     model = RandomForestRegressor(
-        n_estimators=100,      
+        n_estimators=150,      
         max_depth=None,               
         n_jobs=-1              
     )
