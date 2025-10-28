@@ -1,17 +1,18 @@
-# Surrogate Model Pipeline for Vapour Pressure of Hydrocarbons (with H,C,N molecules) (CSV-based)
+# Surrogate Model Pipeline for Vapour Pressure of Hydrocarbons (with H,C,N,Cl,Br,I atoms) (CSV-based)
 
 import pandas as pd
 import numpy as np
 from rdkit import RDLogger
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_absolute_error, r2_score, mean_absolute_percentage_error
 import matplotlib.pyplot as plt
 from pandarallel import pandarallel
 
 RDLogger.DisableLog('rdApp.warning')
 
-pandarallel.initialize(progress_bar=True, nb_workers=12)
+pandarallel.initialize(progress_bar=True)
 
 def load_csv_data(csv_file):
     try:
@@ -35,9 +36,10 @@ def compute_descriptors(inchi):
 
     def num_branches(inchi):
         return sum((atom.GetAtomicNum() == 6 and atom.GetDegree() > 2) for atom in mol.GetAtoms())
-    
     def num_nitrogens(inchi):
         return sum(atom.GetAtomicNum() == 7 for atom in mol.GetAtoms())
+    def num_halogens(inchi):
+        return sum((atom.GetAtomicNum() == 17 or atom.GetAtomicNum() == 35 or atom.GetAtomicNum() == 53) for atom in mol.GetAtoms())
 
     if mol:
         return {
@@ -46,8 +48,11 @@ def compute_descriptors(inchi):
             'NumHDonors': Descriptors.NumHDonors(mol),
             'NumHAcceptors': Descriptors.NumHAcceptors(mol),
             'MolLogP': Descriptors.MolLogP(mol),
+            'BalabanJ': Descriptors.BalabanJ(mol), #connectivity index that accounts for the number of edges, nodes, and distances in the molecular graph;
+            'BertzCT': Descriptors.BertzCT(mol),
             'NumBranches': num_branches(inchi),
-            'NumNitrogens': num_nitrogens(inchi)
+            'NumNitrogens': num_nitrogens(inchi),
+            'NumHalogens': num_halogens(inchi)
         }
     else:
         return {
@@ -56,8 +61,11 @@ def compute_descriptors(inchi):
             'NumHDonors': np.nan,
             'NumHAcceptors': np.nan,
             'MolLogP': np.nan,
+            'BalabanJ': np.nan,
+            'BertzCT': np.nan,
             'NumBranches': np.nan,
-            'NumNitrogens': np.nan
+            'NumNitrogens': np.nan,
+            'NumHalogens': np.nan
         }
 
 def is_alkaneetc(inchi):
@@ -66,28 +74,33 @@ def is_alkaneetc(inchi):
     if not mol:
         return False
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in [1, 6, 7]: #H,C,N
+        if atom.GetAtomicNum() not in [1, 6, 7, 17, 35, 53]: #H,C,N,Cl,Br,I
             return False
     return True
 
 def train_random_forest(df):
 
     desc_df = df['InChI'].parallel_apply(compute_descriptors).parallel_apply(pd.Series)
-    df = pd.concat([df, desc_df], axis=1).dropna()
+    df = pd.concat([df, desc_df], axis=1).drop_duplicates().dropna()
 
-    features = ['Temperature_K', 'MolWt', 'TPSA', 'NumHDonors', 'NumHAcceptors', 'MolLogP', 'NumBranches', 'NumNitrogens']
-    X = df[features]
+    features = ['Temperature_K', 'MolWt', 'TPSA', 'NumHDonors', 'NumHAcceptors', 'MolLogP', 'BalabanJ', 'BertzCT', 'NumBranches', 'NumNitrogens', 'NumHalogens']
+    X = df[features]    
     y = np.log(df['VapourPressure_kPa'])
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15)
+
+    scaler = MinMaxScaler()
+
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
 
     model = RandomForestRegressor(
         n_estimators=150,      
         max_depth=None,               
         n_jobs=-1              
     )
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
+    model.fit(X_train_scaled, y_train)
+    y_pred = model.predict(X_test_scaled)
 
     mae = mean_absolute_error(np.exp(y_test), np.exp(y_pred))  
     mape = mean_absolute_percentage_error(np.exp(y_test), np.exp(y_pred))
@@ -101,7 +114,7 @@ def train_random_forest(df):
     plt.xlabel('Experimental')
     plt.ylabel('Predicted')
 
-    print("\nRandom Forest Model Evaluation:")
+    print("\nResult:")
     print("MAE (kPa):", mae)
     print("MAPE: ", mape)
     print("R^2 Score:", r2)
@@ -112,7 +125,7 @@ def train_random_forest(df):
     return model
 
 if __name__ == "__main__":
-    csv_file = "vapour_pressure_data_final.csv"
+    csv_file = "thermoml_vapor_pressure_smiles.csv"
     df = load_csv_data(csv_file)
 
     if not df.empty:
@@ -120,10 +133,6 @@ if __name__ == "__main__":
 
         print(f"Filtered {len(df)} cleaned hydrocarbon records with vapor pressure data.")
 
-        print("Min P (kPa):", df['VapourPressure_kPa'].min())
-        print("Max P (kPa):", df['VapourPressure_kPa'].max())
-        print("Min T (K)", df['Temperature_K'].min)
-        print("Max T (K)", df['Temperature_K'].max)
         if not df.empty:
             trained_model = train_random_forest(df)
         else:

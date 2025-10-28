@@ -79,8 +79,8 @@ def parse_thermoml_to_csv(xml_dir, output_csv="thermoml_vapor_pressure.csv"):
 
                                                 min_vp = 0.00001
                                                 max_vp = 8000
-                                                min_temp = 200
-                                                max_temp = 400
+                                                min_temp = 275
+                                                max_temp = 375
 
                                                 vp_val = float(val)
 
