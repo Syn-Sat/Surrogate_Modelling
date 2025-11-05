@@ -132,7 +132,7 @@ def train_random_forest(df):
     return model
 
 if __name__ == "__main__":
-    csv_file = "vapor_pressure_smiles.csv"
+    csv_file = "vp_0-2.csv"
     df = load_csv_data(csv_file)
 
     if not df.empty:

@@ -6,3 +6,4 @@ matplotlib>=3.8.0
 pandarallel>=1.6.5
 scipy>=1.11.0
 seaborn>=0.13.0
+xgboost>=2.0.0

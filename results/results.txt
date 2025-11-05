@@ -1,0 +1,23 @@
+xgboost:
+
+0-100kPa vp:
+MAE:	3.613
+MAPE:	0.918
+R2:	0.980
+
+0-2kPa vp:
+MAE:	0.067
+MAPE:	0.294
+R2:	0.986
+
+random forest:
+
+0-100kPa vp:
+MAE:	3.348
+MAPE:	1.419
+R2:	0.977
+
+0-2kPa vp:
+MAE:	0.064
+MAPE:	0.387
+R2:	0.975

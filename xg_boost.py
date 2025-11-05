@@ -1,9 +1,8 @@
-# Surrogate Model Pipeline for Vapour Pressure of Hydrocarbons (with H,C,N,Cl,Br,I atoms) (CSV-based)
+# Surrogate Model Pipeline for Vapour Pressure of Hydrocarbons (with H,C,N atoms) (CSV-based)
 from xgboost import XGBRegressor
 import pandas as pd
 import numpy as np
 from rdkit import RDLogger
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_absolute_error, r2_score, mean_absolute_percentage_error
@@ -97,8 +96,7 @@ def train_random_forest(df):
         max_depth=6,
         subsample=0.8,
         colsample_bytree=0.8,
-        random_state=42,
-        tree_method="gpu_hist"  # use GPU if available, else remove this
+        tree_method="hist"  # use GPU if available, else remove this
     )
     model.fit(X_train_scaled, y_train)
     y_pred = model.predict(X_test_scaled)
@@ -136,7 +134,7 @@ def train_random_forest(df):
     return model
 
 if __name__ == "__main__":
-    csv_file = "vapor_pressure_smiles.csv"
+    csv_file = "vp_0-2.csv"
     df = load_csv_data(csv_file)
 
     if not df.empty:
