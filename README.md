@@ -1,9 +1,9 @@
 # Surrogate Modelling For Thermodynamic Properties Using ML
 
 ## Tool Stack
-Data/featurization: numpy,pandas, RDKit,matplotlib,scipy,seaborn
-Models: scikit-learn (RandomForestRegressor), XGBoost.
-Optimization: pandarallel for multithreading.
+- Data/featurization: numpy,pandas, RDKit,matplotlib,scipy,seaborn
+- Models: scikit-learn (RandomForestRegressor), XGBoost.
+- Optimization: pandarallel for multithreading.
 
 ## BLUE PRINT
 
@@ -15,7 +15,7 @@ This guide outlines the steps to create a surrogate model for predicting vapor p
 
 ### 1. Define the Property
 - Target property: Vapor pressure of hydrocarbons (H,C,N atoms).
-- Model \(\log_{10}(VP/\text{kPa})\) as a function of temperature and molecular descriptors.
+- Model Vapour Pressure (kPa) as a function of temperature and molecular descriptors.
 
 ---
 
