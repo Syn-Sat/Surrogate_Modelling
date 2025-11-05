@@ -74,14 +74,14 @@ def is_alkaneetc(inchi):
             return False
     return True
 
-def train_random_forest(df):
+def train_xgboost(df):
 
     desc_df = df['InChI'].parallel_apply(compute_descriptors).parallel_apply(pd.Series)
     df = pd.concat([df, desc_df], axis=1).drop_duplicates().dropna()
 
     features = ['Temperature_K', 'MolWt', 'TPSA', 'NumHDonors', 'NumHAcceptors', 'MolLogP', 'BalabanJ', 'BertzCT', 'NumBranches', 'NumNitrogens']
     X = df[features]    
-    y = np.log(df['VapourPressure_kPa'])
+    y = np.power(df['VapourPressure_kPa'], 0.004)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
 
@@ -101,8 +101,8 @@ def train_random_forest(df):
     model.fit(X_train_scaled, y_train)
     y_pred = model.predict(X_test_scaled)
 
-    mae = mean_absolute_error(np.exp(y_test), np.exp(y_pred))  
-    mape = mean_absolute_percentage_error(np.exp(y_test), np.exp(y_pred))
+    mae = mean_absolute_error(np.power(y_test,250), np.power(y_pred,250))
+    mape = mean_absolute_percentage_error(np.power(y_test,250), np.power(y_pred,250))
     r2 = r2_score(y_test, y_pred)
 
     vp_skewness = skew(df['VapourPressure_kPa'], nan_policy='omit')
@@ -143,7 +143,7 @@ if __name__ == "__main__":
         print(f"Filtered {len(df)} cleaned hydrocarbon records with vapor pressure data.")
 
         if not df.empty:
-            trained_model = train_random_forest(df)
+            trained_model = train_xgboost(df)
         else:
             print("No vapor pressure data after filtering.")
     else:
