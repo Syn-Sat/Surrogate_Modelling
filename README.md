@@ -9,7 +9,7 @@
 
 # Surrogate Modelling of Vapor Pressure for Hydrocarbons (Machine Learning Approach)
 
-This guide outlines the steps to create a surrogate model for predicting vapor pressure (\(p_\mathrm{sat}(T)\)) of hydrocarbons using Machine Learning.
+This guide outlines the steps to create a surrogate model for predicting vapor pressure of hydrocarbons using Machine Learning.
 
 ---
 
@@ -30,10 +30,10 @@ Create a CSV with columns:
 
 | Column                | Description                      |
 |-----------------------|----------------------------------|
-| SMILES                | SMILES string for RDKit features |
 | InChI                 | InChI string for RDKit features  |
-| T_K                   | Temperature in Kelvin            |
+| SMILES                | SMILES string for RDKit features |
 | VapourPressure_kPa    | Vapor pressure in kPa            |
+| T_K                   | Temperature in Kelvin            |
 ---
 
 ### 4. Data Pre-Processing
@@ -52,20 +52,20 @@ Create a CSV with columns:
 - Use **XGBoost** and **RandomForestRegressor** for tabular regression.
 - Train on all compounds simultaneously.
 - Inputs: selected features (Step 5).
-- Target: \(\log_{10}(p_\mathrm{sat}/\text{bar})\).
+- Target: VapourPressure_kPa.
 
 ---
 
 ### 7. Metrics
 Evaluate:
-- MAE and MAPE on `vapour pressure`
+- MAE and MAPE on `VapourPressure_kPa`
 - R^2 score
 
 ---
 
 ### 8. Visualization
 - Plot predicted vs true vapor pressure.
-- Plot skewness of vp data
+- Plot skewness of vapour pressure data
 
 
 
