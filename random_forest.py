@@ -38,8 +38,6 @@ def compute_descriptors(inchi):
         return sum((atom.GetAtomicNum() == 6 and atom.GetDegree() > 2) for atom in mol.GetAtoms())
     def num_nitrogens(inchi):
         return sum(atom.GetAtomicNum() == 7 for atom in mol.GetAtoms())
-    def num_halogens(inchi):
-        return sum((atom.GetAtomicNum() == 17 or atom.GetAtomicNum() == 35 or atom.GetAtomicNum() == 53) for atom in mol.GetAtoms())
 
     if mol:
         return {
@@ -51,8 +49,7 @@ def compute_descriptors(inchi):
             'BalabanJ': Descriptors.BalabanJ(mol), #connectivity index that accounts for the number of edges, nodes, and distances in the molecular graph;
             'BertzCT': Descriptors.BertzCT(mol),
             'NumBranches': num_branches(inchi),
-            'NumNitrogens': num_nitrogens(inchi),
-            'NumHalogens': num_halogens(inchi)
+            'NumNitrogens': num_nitrogens(inchi)
         }
     else:
         return {
@@ -64,8 +61,7 @@ def compute_descriptors(inchi):
             'BalabanJ': np.nan,
             'BertzCT': np.nan,
             'NumBranches': np.nan,
-            'NumNitrogens': np.nan,
-            'NumHalogens': np.nan
+            'NumNitrogens': np.nan
         }
 
 def is_alkaneetc(inchi):
@@ -74,7 +70,7 @@ def is_alkaneetc(inchi):
     if not mol:
         return False
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in [1, 6, 7, 17, 35, 53]: #H,C,N,Cl,Br,I
+        if atom.GetAtomicNum() not in [1, 6, 7]: #H,C,N,Cl,Br,I
             return False
     return True
 
@@ -83,11 +79,11 @@ def train_random_forest(df):
     desc_df = df['InChI'].parallel_apply(compute_descriptors).parallel_apply(pd.Series)
     df = pd.concat([df, desc_df], axis=1).drop_duplicates().dropna()
 
-    features = ['Temperature_K', 'MolWt', 'TPSA', 'NumHDonors', 'NumHAcceptors', 'MolLogP', 'BalabanJ', 'BertzCT', 'NumBranches', 'NumNitrogens', 'NumHalogens']
+    features = ['Temperature_K', 'MolWt', 'TPSA', 'NumHDonors', 'NumHAcceptors', 'MolLogP', 'BalabanJ', 'BertzCT', 'NumBranches', 'NumNitrogens']
     X = df[features]    
     y = np.log(df['VapourPressure_kPa'])
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
 
     scaler = MinMaxScaler()
 
