@@ -10,7 +10,7 @@ from sklearn.metrics import mean_absolute_error, r2_score, mean_absolute_percent
 import matplotlib.pyplot as plt
 from pandarallel import pandarallel
 from scipy.stats import skew, kurtosis
-
+import seaborn as sns
 RDLogger.DisableLog('rdApp.warning')
 
 pandarallel.initialize(progress_bar=True)
@@ -103,18 +103,14 @@ def train_random_forest(df):
     mape = mean_absolute_percentage_error(np.exp(y_test), np.exp(y_pred))
     r2 = r2_score(y_test, y_pred)
 
-    stats_df = df[features].apply(
-        lambda x: pd.Series({
-            'Skewness': skew(x, nan_policy='omit'),
-            'Kurtosis': kurtosis(x, nan_policy='omit')
-        })
-    ).T
+    vp_skewness = skew(df['VapourPressure_kPa'], nan_policy='omit')
+    print(f"Skewness of VapourPressure_kPa: {vp_skewness:.3f}")
 
-    plt.figure(figsize=(10,5))
-    stats_df['Skewness'].plot(kind='bar', color='skyblue')
-    plt.axhline(0, color='black', lw=1)
-    plt.title("Skewness of Descriptors")
-    plt.ylabel("Skewness")
+    # Plot histogram
+    sns.histplot(df['VapourPressure_kPa'], bins=50, kde=True)
+    plt.title(f"Vapour Pressure Distribution (Skewness = {vp_skewness:.2f})")
+    plt.xlabel("Vapour Pressure (kPa)")
+    plt.ylabel("Frequency")
     plt.show()
 
     plt.scatter(y_test, y_pred, color='blue')
@@ -136,7 +132,7 @@ def train_random_forest(df):
     return model
 
 if __name__ == "__main__":
-    csv_file = "thermoml_vapor_pressure_smiles.csv"
+    csv_file = "vapor_pressure_smiles.csv"
     df = load_csv_data(csv_file)
 
     if not df.empty:

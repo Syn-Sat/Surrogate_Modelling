@@ -78,7 +78,7 @@ def parse_thermoml_to_csv(xml_dir, output_csv="thermoml_vapor_pressure.csv"):
                                                 smiles_str = inchi_to_smiles(inchi_str)
 
                                                 min_vp = 0.00001
-                                                max_vp = 8000
+                                                max_vp = 180
                                                 min_temp = 275
                                                 max_temp = 375
 
@@ -114,4 +114,4 @@ def parse_thermoml_to_csv(xml_dir, output_csv="thermoml_vapor_pressure.csv"):
 # --- Run Parser ---
 if __name__ == "__main__":
     data_dir = "ThermoML.v2020-09-30"  # folder with ThermoML XML files
-    parse_thermoml_to_csv(data_dir, "thermoml_vapor_pressure_smiles.csv")
+    parse_thermoml_to_csv(data_dir, "vapor_pressure_smiles.csv")
