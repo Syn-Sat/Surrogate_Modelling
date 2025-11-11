@@ -77,22 +77,16 @@ def parse_thermoml_to_csv(xml_dir, output_csv="thermoml_vapor_pressure.csv"):
                                                 inchi_str = inchis[0]  # first component for now
                                                 smiles_str = inchi_to_smiles(inchi_str)
 
-                                                min_vp = 0.00001
-                                                max_vp = 100
-                                                min_temp = 275
-                                                max_temp = 375
-
                                                 vp_val = float(val)
 
                                                 temp_val_float = float(temp_val)
-                                                if (min_vp <= vp_val <= max_vp) and (min_temp <= temp_val_float <= max_temp):
                                                     
-                                                    records.append({
-                                                        "InChI": inchi_str,
-                                                        "SMILES": smiles_str,
-                                                        "VapourPressure_kPa": vp_val,
-                                                        "Temperature_K": temp_val_float if temp_val else None
-                                                    })
+                                                records.append({
+                                                    "InChI": inchi_str,
+                                                    "SMILES": smiles_str,
+                                                    "VapourPressure_kPa": vp_val,
+                                                    "Temperature_K": temp_val_float if temp_val else None
+                                                })
                                             except ValueError:
                                                 continue
 
@@ -114,4 +108,4 @@ def parse_thermoml_to_csv(xml_dir, output_csv="thermoml_vapor_pressure.csv"):
 # --- Run Parser ---
 if __name__ == "__main__":
     data_dir = "ThermoML.v2020-09-30"  # folder with ThermoML XML files
-    parse_thermoml_to_csv(data_dir, "vp_0-100.csv")
+    parse_thermoml_to_csv(data_dir, "vp_0-0p125.csv")

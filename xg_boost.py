@@ -81,7 +81,7 @@ def train_xgboost(df):
 
     features = ['Temperature_K', 'MolWt', 'TPSA', 'NumHDonors', 'NumHAcceptors', 'MolLogP', 'BalabanJ', 'BertzCT', 'NumBranches', 'NumNitrogens']
     X = df[features]    
-    y = np.power(df['VapourPressure_kPa'], 0.004)
+    y = np.log(df['VapourPressure_kPa'])
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
 
@@ -101,20 +101,51 @@ def train_xgboost(df):
     model.fit(X_train_scaled, y_train)
     y_pred = model.predict(X_test_scaled)
 
-    mae = mean_absolute_error(np.power(y_test,250), np.power(y_pred,250))
-    mape = mean_absolute_percentage_error(np.power(y_test,250), np.power(y_pred,250))
+    mae = mean_absolute_error(np.exp(y_test), np.exp(y_pred))
+    mape = mean_absolute_percentage_error(np.exp(y_test), np.exp(y_pred))
     r2 = r2_score(y_test, y_pred)
 
-    vp_skewness = skew(df['VapourPressure_kPa'], nan_policy='omit')
-    print(f"Skewness of VapourPressure_kPa: {vp_skewness:.3f}")
+    vp_skew = skew(np.log(df['VapourPressure_kPa']),  nan_policy='omit')
+    vp_kurt = kurtosis(np.log(df['VapourPressure_kPa']), fisher=False,  nan_policy='omit')
+    print("\n")
+    print(f"Skewness: {vp_skew:.3f}, Kurtosis: {vp_kurt:.3f}")
 
-    # Plot histogram
-    sns.histplot(df['VapourPressure_kPa'], bins=50, kde=True)
-    plt.title(f"Vapour Pressure Distribution (Skewness = {vp_skewness:.2f})")
+    #kurtosis 2.05
+    #skewness -0.58
+
+    #feature correlation
+    corr = df[features + ['VapourPressure_kPa']].corr()
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(corr, annot=True, fmt=".2f", cmap='coolwarm', square=True, linewidths=0.5)
+    plt.title("Feature Correlation Heatmap")
+    plt.tight_layout()
+    plt.show()
+
+    #feature weightage
+    importance_dict = model.get_booster().get_score(importance_type='weight')
+    feat_imp_df = pd.DataFrame({
+        'Feature': features,
+        'Importance': [importance_dict.get(f'f{i}', 0) for i in range(len(features))]
+    })
+
+    feat_imp_df = feat_imp_df.sort_values(by='Importance', ascending=False)
+
+    plt.figure(figsize=(8, 5))
+    sns.barplot(data=feat_imp_df, x='Importance', y='Feature', palette='viridis')
+    plt.title("XGBoost Feature Importance (by Weight)")
+    plt.xlabel("Importance Score (Split Frequency)")
+    plt.ylabel("Feature (Molecular Descriptor)")
+    plt.tight_layout()
+    plt.show()
+
+    #freq histogram
+    sns.histplot(np.log(df['VapourPressure_kPa']), bins=30, kde=True)
+    plt.title(f"VP Dist (Skewness = {vp_skew:.2f}, Kurtosis = {vp_kurt:.2f})")
     plt.xlabel("Vapour Pressure (kPa)")
     plt.ylabel("Frequency")
     plt.show()
 
+    #exp vs pred graph
     plt.scatter(y_test, y_pred, color='blue')
     m, b = np.polyfit(y_test, y_pred, 1)
 
@@ -134,7 +165,7 @@ def train_xgboost(df):
     return model
 
 if __name__ == "__main__":
-    csv_file = "vp_0-2.csv"
+    csv_file = "vp_0-100.csv"
     df = load_csv_data(csv_file)
 
     if not df.empty:

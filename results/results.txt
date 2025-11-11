@@ -10,6 +10,8 @@ MAE:	0.067
 MAPE:	0.294
 R2:	0.986
 
+-----------------------------
+
 random forest:
 
 0-100kPa vp:
@@ -21,3 +23,9 @@ R2:	0.977
 MAE:	0.064
 MAPE:	0.387
 R2:	0.975
+
+-----------------------------
+
+for log transformed vp:
+kurtosis 2.05
+skewness -0.58
