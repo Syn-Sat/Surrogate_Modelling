@@ -1,9 +1,9 @@
 xgboost:
 
 0-100kPa vp:
-MAE:	3.613
-MAPE:	0.918
-R2:	0.980
+MAE (kPa): 3.564
+MAPE:  0.8732%
+R^2 Score: 0.9815
 
 0-2kPa vp:
 MAE:	0.067

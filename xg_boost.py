@@ -114,6 +114,7 @@ def train_xgboost(df):
     #skewness -0.58
 
     #feature correlation
+    plt.rcParams['savefig.dpi'] = 600
     corr = df[features + ['VapourPressure_kPa']].corr()
     plt.figure(figsize=(10, 8))
     sns.heatmap(corr, annot=True, fmt=".2f", cmap='coolwarm', square=True, linewidths=0.5)
